@@ -1,0 +1,36 @@
+{
+  "name": "docker-build-api",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "author": "alexba6 <alexisbaylet6@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "dev": "tsc -p tsconfig.json -w & NODE_ENV=development nodemon dist/index.js",
+    "start": "NODE_ENV=production node build/index.js",
+    "build": "tsc -p tsconfig.json --outDir ./build",
+    "test": "jest --config jest.config.ts"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.14.8",
+    "@babel/plugin-proposal-class-properties": "^7.14.5",
+    "@babel/plugin-proposal-decorators": "^7.14.5",
+    "@babel/plugin-transform-typescript": "^7.14.6",
+    "@babel/preset-env": "^7.14.8",
+    "@babel/preset-typescript": "^7.14.5",
+    "@types/faker": "^5.5.7",
+    "@types/jest": "^26.0.24",
+    "@types/node": "^16.3.3",
+    "@types/supertest": "^2.0.11",
+    "babel-jest": "^27.0.6",
+    "babel-plugin-transform-typescript-metadata": "^0.3.2",
+    "faker": "^5.5.3",
+    "supertest": "^6.1.4",
+    "ts-loader": "^9.2.4",
+    "ts-node": "^10.1.0",
+    "tslint": "^5.12.1",
+    "typescript": "^3.9.10"
+  },
+  "dependencies": {
+    "jest": "^27.4.7"
+  }
+}
