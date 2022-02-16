@@ -14,6 +14,6 @@ export const databaseConfiguration: ConnectionOptions = {
     database: process.env.DATABASE_NAME,
     entities: [
         User,
-        Project
+        Project,
     ]
 }

@@ -1,17 +1,33 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import {Column, Entity, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
 import crypto from "crypto"
 import path from "path"
 import { runProcess } from "../tools/process";
 
 import { User } from "./user"
-import { REPO_STORE_PATH } from "../config/repo";
+import {REPO_STORE_PATH, REPOSITORY_NAME} from "../config/store_path";
 import { createFolderIfNotExists } from "../tools/file";
-import { DockerActionParams } from "../actions/docker";
 
 
-export type ProjectSettings = {
-    actions: {
-        docker?: DockerActionParams
+export enum Context {
+    PRODUCTION='production',
+    TEST='test'
+}
+
+export type EnvironmentArray = [string, string | number | boolean | null]
+
+export type ProjectDockerOptions = {
+    git: {
+        branchTrack: string,
+        autoBuild: boolean
+    },
+    test: {
+        enable: boolean,
+        target: string | null,
+        environment: EnvironmentArray[]
+    },
+    production: {
+        target: string | null,
+        environment: EnvironmentArray[]
     }
 }
 
@@ -42,18 +58,27 @@ export class Project {
     createdAt: Date
 
     @Column({
-        type: 'json',
-        nullable: false
+        type: 'json'
     })
-    settings: ProjectSettings
+    dockerOptions: ProjectDockerOptions
 
     constructor() {
         this.id = crypto.randomUUID()
         this.createdAt = new Date()
         this.owner = null
-        this.settings = {
-            actions: {
-                docker: undefined
+        this.dockerOptions = {
+            git: {
+                branchTrack: 'master',
+                autoBuild: true
+            },
+            test: {
+                enable: false,
+                target: null,
+                environment: []
+            },
+            production: {
+                target: null,
+                environment: []
             }
         }
     }
@@ -62,21 +87,37 @@ export class Project {
         const mainPath = path.join(REPO_STORE_PATH, this.id)
         return {
             project: mainPath,
-            repository: path.join(mainPath, 'repo.git'),
-            docker: path.join(mainPath, 'docker')
+            repository: path.join(mainPath, REPOSITORY_NAME)
         }
     }
-
-
     public async initFolder() {
-        const { project, repository, docker } = this.projectPath
+        const { project, repository } = this.projectPath
         await createFolderIfNotExists(project)
         await createFolderIfNotExists(repository)
-        await createFolderIfNotExists(docker)
 
         await runProcess('git', ['init', '--bare', repository])
-        await runProcess('git', ['init', docker])
-        await runProcess('git', ['remote', 'add', 'origin', repository], { cwd: docker })
+    }
+
+    /**
+     * @param context
+     */
+    getEnvironment(context: Context) {
+        return context === Context.PRODUCTION ?
+            this.dockerOptions.production.environment
+            : this.dockerOptions.test.environment
+    }
+
+    /**
+     * @param context
+     * @param environment
+     */
+    setEnvironment(context: Context, environment: EnvironmentArray[]) {
+        if (context === Context.PRODUCTION) {
+            this.dockerOptions.production.environment = environment
+        }
+        else if (context === Context.TEST){
+            this.dockerOptions.test.environment = environment
+        }
     }
 
     get info() {
@@ -85,6 +126,16 @@ export class Project {
             name: this.name,
             tags: this.tags,
             createdAt: this.createdAt
+        }
+    }
+
+    get allInfo() {
+        return {
+            id: this.id,
+            name: this.name,
+            tags: this.tags,
+            createdAt: this.createdAt,
+            options: this.dockerOptions
         }
     }
 }

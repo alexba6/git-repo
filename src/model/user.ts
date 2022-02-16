@@ -6,7 +6,6 @@ import { Buffer } from 'buffer'
 import {UserError} from '../error/user'
 import {Project} from "./project";
 
-
 const scrypt: (password: BinaryLike, salt: BinaryLike, keyLen: number) => Promise<Buffer> = promisify<BinaryLike, BinaryLike, number, Buffer>(crypto.scrypt)
 
 type Password = {
@@ -39,11 +38,14 @@ export class User {
     @OneToMany(() => Project, project => project.owner)
     projects: Project[] | null
 
+    @Column()
+    maxProject: number
 
     constructor() {
         this.id = crypto.randomUUID()
         this.createdAt = new Date()
         this.projects = null
+        this.maxProject = 2
     }
 
     /**
@@ -76,6 +78,16 @@ export class User {
     async verifyPassword(password: string) {
         if (!await this.isValidPassword(password)) {
             throw new UserError('INVALID_PASSWORD')
+        }
+    }
+
+    get info() {
+        return {
+            id: this.id,
+            email: this.email,
+            username: this.username,
+            maxProject: this.maxProject,
+            createdAt: this.createdAt
         }
     }
 }

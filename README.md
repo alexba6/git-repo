@@ -37,8 +37,12 @@ DATABASE_USER=<string>
 DATABASE_PASSWORD=<string>
 DATABASE_NAME=<string>
 
-# Repository
-REPO_STORE_PATH<string>
+# Store
+REPO_STORE_PATH=<string>
+TEMP_STORE=<string>
+
+# Actions
+DOCKER_SOCK=<string default /var/run/docker.sock>
 ```
 
 ## Run
@@ -57,10 +61,10 @@ npm run build
 npm start
 ```
 
-## Actions
+## Services
 
-Git repo has same actions for your project.
+Git repo has some services for your project.
 
-| Action name | Requirements                |Description  |
-|-------------|-----------------------------|-----|
-| **Docker**  | [docker](https://www.docker.com) |Build your project after push it.|
+| Service name     | Requirements                |Description  |
+|------------|-----------------------------|-----|
+| **Docker** | [docker](https://www.docker.com) |Build your project after push it.|

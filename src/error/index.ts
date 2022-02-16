@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express'
 import {JsonWebTokenError} from "jsonwebtoken";
+import {DEBUG} from "../config/env";
 
 
 export type ApiErrorParams = {
@@ -63,6 +64,9 @@ export const errorAPIHandler = (...handlers: RequestHandler<any, any, any, any, 
                 await handler(req, res, next)
             }
             catch (e) {
+                if (DEBUG) {
+                    console.error(e)
+                }
                 if (e instanceof APIError) {
                     e.sendResponse(res)
                     return

@@ -4,7 +4,7 @@ import {
     Response
 } from 'express'
 import { ObjectSchema } from 'joi'
-import {SchemaBodyError} from "../error/error-schema-body";
+import { SchemaBodyError } from "../error/error-schema-body";
 
 /**
  * Request body schema middleware validation

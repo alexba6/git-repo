@@ -22,6 +22,7 @@ export type AuthenticationRepoLocalsResponse = {
  */
 export const middlewareAuthenticationRepo = async (req: Request, res: Response<any, AuthenticationRepoLocalsResponse>, next: NextFunction) => {
     const authorization = req.headers['authorization']
+    const { username, repoName } = req.params
 
     if (!authorization) {
         throw new AuthRepoError('MUST_BASIC_AUTH')
@@ -34,7 +35,7 @@ export const middlewareAuthenticationRepo = async (req: Request, res: Response<a
     }
 
     const buffer = Buffer.from(token, 'base64')
-    const [login, password] = buffer.toString('utf8').split(':')
+    const [login, auth] = buffer.toString('utf8').split(':')
 
     const user = await getRepository(User).findOne({
         where: [
@@ -47,14 +48,25 @@ export const middlewareAuthenticationRepo = async (req: Request, res: Response<a
         throw new AuthRepoError('INVALID_LOGIN')
     }
 
-    if (!await user.isValidPassword(password)) {
+    if (username !== user.username) {
+        throw new AuthRepoError('INVALID_REPO_URL')
+    }
+
+    if (!await user.isValidPassword(auth)) {
         throw new AuthRepoError('INVALID_PASSWORD')
     }
 
-    const repoName = req.params.repoName
-
     const project = await getRepository(Project).findOne({
-        where: { owner: user, name: repoName }
+        where: {
+            owner: user,
+            name: repoName,
+        },
+        join: {
+            alias: 'project',
+            leftJoinAndSelect: {
+                owner: 'project.owner'
+            }
+        }
     })
 
     if (!project) {

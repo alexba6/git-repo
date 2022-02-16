@@ -6,12 +6,12 @@ import {postServiceRepoController} from "../controller/repo/repo-service-post";
 
 export const repoRouter = Router()
 
-repoRouter.get('/:repoName/info/refs', errorAPIHandler(
+repoRouter.get('/:username/:repoName/info/refs', errorAPIHandler(
     middlewareAuthenticationRepo,
     getInfoRefRepoController
 ))
 
-repoRouter.post('/:repoName/:service', errorAPIHandler(
+repoRouter.post('/:username/:repoName/:service', errorAPIHandler(
     middlewareAuthenticationRepo,
     postServiceRepoController
 ))

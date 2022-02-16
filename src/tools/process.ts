@@ -5,7 +5,7 @@ import {spawn,  SpawnOptionsWithoutStdio} from "child_process"
  * @param args
  * @param options
  */
-export const runProcess = (commands: string, args: string[], options?: SpawnOptionsWithoutStdio) => new Promise<any>((resolve, reject) => {
+export const runProcess = (commands: string, args: string[], options?: SpawnOptionsWithoutStdio) => new Promise<string>((resolve, reject) => {
     const ps = spawn(commands, args, options)
     let out = ''
     ps.stdout.on('data', (buffer: Buffer) => {

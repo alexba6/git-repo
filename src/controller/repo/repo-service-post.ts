@@ -1,10 +1,12 @@
-import { Request, Response } from 'express'
+import {Request, Response} from 'express'
 import {AuthenticationRepoLocalsResponse} from "../../middleware/middleware-authentication-repo";
-import {END_PUSH_HEX_DATA, packSideband} from "../../tools/git";
+import {END_PUSH_HEX_DATA, getLastCommitId, packSideband} from "../../tools/git";
 import {spawn} from "child_process";
 import util from "util";
-import colors from 'colors'
-import { DockerAction } from '../../actions/docker';
+import {DockerImageManager} from "../../services/docker/docker-image-manager";
+import {runProcess} from "../../tools/process";
+import {ContainerState, DockerContainerManager} from "../../services/docker/docker-container-manager";
+import {Context} from "../../model/project";
 
 const pushRemoteMessage = (message: string): Buffer => {
     const _log = util.format(message)
@@ -46,18 +48,46 @@ export const postServiceRepoController = async (req: Request, res: Response<any,
 
     ps.stdin.on('close', async () => {
         if (service === 'git-receive-pack') {
-            const dockerActionParams = project.settings.actions.docker
-            if (dockerActionParams) {
+            const dockerOptions = project.dockerOptions
+            if (dockerOptions.git.autoBuild) {
                 try {
-                    const commitId = await DockerAction.getHEADCommitId(project)
-                    const dockerAction = new DockerAction(project, dockerActionParams, commitId)
-                    await dockerAction.runContainer(message => {
-                        res.write(pushRemoteMessage(message))
-                    })
+                    const commitId = await getLastCommitId(project.projectPath.repository)
+                    if (commitId) {
+                        if (dockerOptions.test.enable) {
+                            res.write(pushRemoteMessage('BUILD TEST'))
+                            const testImage = new DockerImageManager(project, commitId, Context.TEST)
+                            await testImage.build(msg => {
+                                res.write(pushRemoteMessage(msg))
+                            })
+                            const testContainer = new DockerContainerManager(project, Context.TEST)
+                            res.write(pushRemoteMessage('RUN TEST'))
+                            await testContainer.create(testImage.name)
+                            await testContainer.switchState(ContainerState.START)
+                            await testContainer.getLog(true, log => {
+                                res.write(pushRemoteMessage(log))
+                            })
+                            await testContainer.switchState(ContainerState.STOP)
+                            await testContainer.remove()
+                            await testImage.remove()
+                        }
+                        res.write(pushRemoteMessage('BUILD PRODUCTION'))
+                        const buildImage = new DockerImageManager(project, commitId, Context.PRODUCTION)
+                        await buildImage.build(msg => {
+                            res.write(pushRemoteMessage(msg))
+                        })
+                        const productionContainer = new DockerContainerManager(project, Context.PRODUCTION)
+                        try {
+                            await productionContainer.switchState(ContainerState.STOP)
+                            await productionContainer.remove()
+                        }
+                        catch (e) {}
+                        res.write(pushRemoteMessage('RUN PRODUCTION'))
+                        await productionContainer.create(buildImage.name)
+                        await productionContainer.switchState(ContainerState.START)
+                    }
                 }
                 catch (e) {
-                    console.log(e)
-                    res.write(pushRemoteMessage(colors.red(String(e))))
+                    res.write(pushRemoteMessage(e))
                 }
             }
             for (const hex of END_PUSH_HEX_DATA) {

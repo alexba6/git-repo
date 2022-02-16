@@ -6,6 +6,7 @@ type AuthReposErrorList =
     | 'MUST_BASIC_AUTH'
     | 'PROJECT_NOT_FOUND'
     | 'CANNOT_ACCESS_TO_THIS_REPOSITORY'
+    | 'INVALID_REPO_URL'
 
 export class AuthRepoError extends APIError<AuthReposErrorList> {
     /**
